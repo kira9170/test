@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<!-- [1.2] MODIFIÉ — détail des changements dans CHANGELOG_1.2.md -->
+<!-- [1.3] MODIFIÉ — mode en ligne (voir CHANGELOG_1.3.md) -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Brawl</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" width="384" height="216"></canvas>
+
+  <!-- MENU PRINCIPAL -->
+  <div id="menu" class="screen active">
+    <div class="title">PIXEL BRAWL<span>COMBAT 2D RETRO</span></div>
+    <div class="menu-buttons grid2" id="mode-buttons">
+      <button id="btn-pvp" data-default>1 VS 1 LOCAL</button>
+      <button id="btn-online" class="online">EN LIGNE</button>
+      <button id="btn-ai">1 VS IA</button>
+      <button id="btn-arcade">ARCADE</button>
+      <button id="btn-survival">SURVIE</button>
+      <button id="btn-training">ENTRAÎNEMENT</button>
+      <button id="btn-howto" class="ghost">COMMENT JOUER</button>
+      <button id="btn-options" class="ghost">OPTIONS</button>
+    </div>
+    <div class="menu-buttons hidden" id="diff-buttons">
+      <p class="sub">DIFFICULTÉ DE L'IA</p>
+      <button data-diff="easy">FACILE</button>
+      <button data-diff="medium" data-default>MOYEN</button>
+      <button data-diff="hard">DIFFICILE</button>
+      <button class="ghost" id="btn-diff-back" data-back>RETOUR</button>
+    </div>
+    <div class="controls">
+      <div><b>JOUEUR 1</b><br>
+        Bouger : Z Q S D (AZERTY) / W A S D<br>
+        Poing : F &nbsp; Pied : G &nbsp; Garde : H</div>
+      <div><b>JOUEUR 2</b><br>
+        Bouger : Flèches<br>
+        Poing : K / Pavé 1 &nbsp; Pied : L / Pavé 2 &nbsp; Garde : M / Pavé 3</div>
+      <div class="wide"><b>TECHNIQUES</b> &nbsp; Garde + Bas : garde basse • Poing + Pied (près) : projection (et se libérer) •
+        Double appui → ou ← : dash • Poing qui touche → spécial : annulation • ↓ → ↓ → + Poing (jauge pleine) : SUPER</div>
+    </div>
+    <div class="hint">ÉCHAP / P : pause &nbsp;•&nbsp; F2 : hitboxes &nbsp;•&nbsp; → = vers l'adversaire</div>
+  </div>
+
+  <!-- SÉLECTION DES PERSONNAGES -->
+  <div id="select" class="screen">
+    <h2>CHOIX DES COMBATTANTS</h2>
+    <div class="roster" id="roster"></div>
+    <div class="select-row">
+      <div class="pick" id="pick-0">
+        <div class="pick-head"><span class="pick-label">JOUEUR 1</span>
+          <span class="pick-nav"><button class="small ghost" data-player="0" data-dir="-1">◀</button><button class="small ghost" data-player="0" data-dir="1">▶</button></span></div>
+        <canvas width="96" height="84"></canvas>
+        <div class="pick-info">
+          <div class="pick-name"></div>
+          <div class="pick-title"></div>
+          <div class="pick-desc"></div>
+          <div class="stats"></div>
+        </div>
+        <div class="combos"></div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="pick" id="pick-1">
+        <div class="pick-head"><span class="pick-label">JOUEUR 2</span>
+          <span class="pick-nav"><button class="small ghost" data-player="1" data-dir="-1">◀</button><button class="small ghost" data-player="1" data-dir="1">▶</button></span></div>
+        <canvas width="96" height="84"></canvas>
+        <div class="pick-info">
+          <div class="pick-name"></div>
+          <div class="pick-title"></div>
+          <div class="pick-desc"></div>
+          <div class="stats"></div>
+        </div>
+        <div class="combos"></div>
+      </div>
+    </div>
+    <div class="menu-buttons row">
+      <button class="ghost" id="btn-select-back" data-back>RETOUR</button>
+      <button id="btn-select-next">CHOISIR L'ARÈNE ▶</button>
+    </div>
+  </div>
+
+  <!-- SÉLECTION DE L'ARÈNE -->
+  <div id="stage" class="screen">
+    <h2>CHOIX DE L'ARÈNE</h2>
+    <div class="stages" id="stage-list"></div>
+    <p class="sub" id="stage-info"></p>
+    <div class="menu-buttons row">
+      <button class="ghost" id="btn-stage-back" data-back>RETOUR</button>
+      <button id="btn-stage-go">COMBATTRE !</button>
+    </div>
+  </div>
+
+  <!-- OPTIONS -->
+  <div id="options" class="screen">
+    <h2>OPTIONS</h2>
+    <div class="menu-buttons options" id="options-list"></div>
+    <div class="menu-buttons row">
+      <button class="ghost" id="btn-fullscreen">PLEIN ÉCRAN</button>
+      <button class="ghost" id="btn-options-back" data-back>RETOUR</button>
+    </div>
+  </div>
+
+  <!-- TUTORIEL -->
+  <div id="howto" class="screen">
+    <h2>COMMENT JOUER</h2>
+    <div class="howto">
+      <div><b>1. SE DÉPLACER</b>Avancer / reculer, Haut pour sauter, Bas pour s'accroupir. Double appui sur une direction : dash.</div>
+      <div><b>2. FRAPPER</b>Poing = rapide, Pied = puissant. En l'air, ils deviennent des attaques plongeantes à bloquer debout.</div>
+      <div><b>3. SE DÉFENDRE</b>Garde = bloquer. Garde + Bas pour les coups bas (balayages). Les coups aériens se bloquent debout.</div>
+      <div><b>4. PROJETER</b>Poing + Pied tout près : projection imparable. Appuyez aussi sur Poing + Pied quand on vous attrape pour vous libérer.</div>
+      <div><b>5. ENCHAÎNER</b>Un Poing qui touche peut enchaîner un Pied ou être annulé dans un coup spécial (ex : P puis ↓ → P).</div>
+      <div><b>6. SUPER</b>La jauge bleue se remplit en frappant et en encaissant. Pleine : ↓ → ↓ → + Poing. Chaque perso a la sienne.</div>
+    </div>
+    <p class="sub">Les coups spéciaux de chaque combattant sont affichés à la sélection et dans le menu pause.</p>
+    <div class="menu-buttons row">
+      <button class="ghost" id="btn-howto-back" data-back>RETOUR</button>
+      <button id="btn-howto-try" data-default>ESSAYER EN ENTRAÎNEMENT</button>
+    </div>
+  </div>
+
+  <!-- EN LIGNE : créer / rejoindre -->
+  <div id="online" class="screen">
+    <h2>EN LIGNE</h2>
+    <p class="sub">Affrontez un ami à distance : l'un crée la partie, l'autre entre le code (ou ouvre le lien d'invitation).</p>
+    <div class="net-box">
+      <div class="net-col">
+        <b>JOUEUR 1</b>
+        <button id="btn-net-host" data-default>CRÉER UNE PARTIE</button>
+      </div>
+      <div class="net-col">
+        <b>JOUEUR 2</b>
+        <input id="net-code" maxlength="8" placeholder="CODE" autocomplete="off" spellcheck="false">
+        <button id="btn-net-join">REJOINDRE</button>
+      </div>
+    </div>
+    <div class="net-status" id="net-status"></div>
+    <div class="menu-buttons row">
+      <button class="ghost" id="btn-net-back" data-back>RETOUR</button>
+      <button class="ghost hidden" id="btn-net-copy">COPIER LE LIEN D'INVITATION</button>
+    </div>
+  </div>
+
+  <!-- EN LIGNE : salon (choix des persos) -->
+  <div id="lobby" class="screen">
+    <h2>EN LIGNE — CHOIX DES COMBATTANTS</h2>
+    <div class="roster" id="lobby-roster"></div>
+    <div class="select-row">
+      <div class="pick lobby-pick" id="lpick-0">
+        <div class="pick-head"><span class="pick-label">J1</span><span class="ready"></span></div>
+        <canvas width="96" height="84"></canvas>
+        <div class="pick-info"><div class="pick-name"></div><div class="pick-title"></div></div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="pick lobby-pick" id="lpick-1">
+        <div class="pick-head"><span class="pick-label">J2</span><span class="ready"></span></div>
+        <canvas width="96" height="84"></canvas>
+        <div class="pick-info"><div class="pick-name"></div><div class="pick-title"></div></div>
+      </div>
+    </div>
+    <p class="sub" id="lobby-info"></p>
+    <div class="menu-buttons row">
+      <button class="ghost" id="btn-lobby-quit" data-back>QUITTER</button>
+      <button class="ghost" id="btn-lobby-stage">ARÈNE</button>
+      <button id="btn-lobby-ready" data-default>PRÊT !</button>
+    </div>
+  </div>
+
+  <!-- EN LIGNE : menu pendant le combat (le jeu ne s'arrête pas) -->
+  <div id="netmenu" class="screen overlay">
+    <h2>EN LIGNE</h2>
+    <p class="sub">Le combat continue pendant que ce menu est ouvert !</p>
+    <div class="menu-buttons">
+      <button id="btn-netmenu-resume" data-back data-default>REPRENDRE</button>
+      <button class="ghost" id="btn-netmenu-quit">QUITTER LA PARTIE</button>
+    </div>
+  </div>
+
+  <!-- PAUSE -->
+  <div id="pause" class="screen">
+    <h2>PAUSE</h2>
+    <div class="pause-layout">
+      <div class="menu-buttons">
+        <button id="btn-resume" data-back data-default>REPRENDRE</button>
+        <button id="btn-restart" class="ghost">RECOMMENCER</button>
+        <button id="btn-reset" class="ghost hidden">RÉINITIALISER (R)</button>
+        <button id="btn-dummy" class="ghost hidden">MANNEQUIN</button>
+        <button class="ghost" id="btn-quit">MENU PRINCIPAL</button>
+      </div>
+      <div class="movelist" id="movelist"></div>
+    </div>
+  </div>
+
+  <!-- FIN DE MATCH -->
+  <div id="result" class="screen">
+    <div class="title" id="result-title">VICTOIRE</div>
+    <p class="quote" id="result-quote"></p>
+    <p class="sub" id="result-sub"></p>
+    <div class="menu-buttons row" id="result-buttons"></div>
+  </div>
+</div>
+
+<!-- Moteur (l'ordre compte) -->
+<script src="js/core/config.js"></script>
+<script src="js/core/utils.js"></script>
+<script src="js/core/registry.js"></script>
+<script src="js/core/audio.js"></script>
+<script src="js/core/input.js"></script>
+<script src="js/core/pose.js"></script>
+<script src="js/core/render.js"></script>
+<script src="js/core/projectile.js"></script>
+<script src="js/core/fighter.js"></script>
+<script src="js/core/ai.js"></script>
+<script src="js/core/game.js"></script>
+
+<!-- Personnages : un fichier par combattant (ajoutez le vôtre ici) -->
+<script src="js/characters/torvald.js"></script>
+<script src="js/characters/astra.js"></script>
+<script src="js/characters/volta.js"></script>
+<script src="js/characters/seiran.js"></script>
+<script src="js/characters/nokta.js"></script>
+<script src="js/characters/krank.js"></script>
+<script src="js/characters/yselle.js"></script>
+<script src="js/characters/varga.js"></script>
+<script src="js/characters/kurumi.js"></script>
+<script src="js/characters/guts.js"></script>
+<script src="js/characters/capricorn.js"></script>
+<script src="js/characters/kaneki.js"></script>
+<script src="js/characters/shinra.js"></script>
+<script src="js/characters/goku.js"></script>
+<script src="js/characters/itachi.js"></script>
+<script src="js/characters/denji.js"></script>
+<script src="js/characters/baia.js"></script>
+<script src="js/characters/tenzo.js"></script>
+<script src="js/characters/marionne.js"></script>
+<script src="js/characters/zara.js"></script>
+<script src="js/characters/aldric.js"></script>
+<script src="js/characters/paprika.js"></script>
+<script src="js/characters/orphe.js"></script>
+<!-- <script src="js/characters/_modele.js"></script>  ← modèle à copier pour créer un perso -->
+
+<!-- Arènes : un fichier par map -->
+<script src="js/stages/crepuscule.js"></script>
+<script src="js/stages/sakura.js"></script>
+<script src="js/stages/port.js"></script>
+<script src="js/stages/neon.js"></script>
+<script src="js/stages/toundra.js"></script>
+
+<!-- Interface et lancement -->
+<script src="js/core/ui.js"></script>
+<script src="js/core/net.js"></script>
+<script src="js/core/main.js"></script>
+</body>
+</html>
