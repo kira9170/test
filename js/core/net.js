@@ -16,10 +16,10 @@
  *  Serveur de mise en relation personnalisé (facultatif) :
  *    index.html?peer=wss://mon-serveur.exemple:443/   (serveur « peer » de PeerJS)
  * ===================================================================== */
-const NET_VERSION = 'pixel-brawl-net-1';
+const NET_VERSION = 'pixel-brawl-net-2';
 const NET_ACTIONS = ['left', 'right', 'up', 'down', 'punch', 'kick', 'guard'];
 const NET_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const NET_PREFIX = 'pixelbrawl-n1-';
+const NET_PREFIX = 'pixelbrawl-n2-';
 const NET_ICE = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun.cloudflare.com:3478' },
@@ -129,12 +129,66 @@ const Net = {
   },
 
   /* ---------- Créer une partie ---------- */
+  /* La bibliothèque officielle PeerJS (chargée depuis unpkg dans index.html) est utilisée si
+   * elle est disponible ; sinon (hors ligne, serveur personnalisé ?peer=…), client intégré. */
+  useLib() { return typeof window.Peer === 'function' && !new URLSearchParams(location.search).get('peer'); },
+
+  libErrorText(err) {
+    const t = err && err.type;
+    if (t === 'peer-unavailable') return `Aucune partie trouvée avec le code ${this.code}. Vérifiez le code, et que votre ami est bien sur l'écran « En attente ».`;
+    if (t === 'browser-incompatible') return 'Ce navigateur ne gère pas le jeu en ligne (WebRTC). Essayez Chrome, Edge ou Firefox à jour.';
+    if (t === 'webrtc' || t === 'negotiation-failed') return "Impossible d'établir la connexion directe avec votre ami (réseau trop restrictif ?).";
+    return `Serveur de mise en relation injoignable ou connexion perdue. Réessayez dans un instant. (${t || 'erreur'})`;
+  },
+
+  newPeer(id) {
+    const peer = new window.Peer(id, { config: { iceServers: NET_ICE }, debug: 1 });
+    peer.on('disconnected', () => {
+      // simple perte du serveur de mise en relation : sans gravité une fois connectés
+      if ((this.phase === 'hosting' || this.phase === 'joining') && this.peer === peer && !peer.destroyed) {
+        setTimeout(() => { try { if (!peer.destroyed) peer.reconnect(); } catch (e) { /* */ } }, 1000);
+      }
+    });
+    return peer;
+  },
+
+  bindConn(conn) {
+    this.conn = conn;
+    this.link = { send: m => { if (conn.open) conn.send(m); }, close: () => { try { conn.close(); } catch (e) { /* */ } } };
+    conn.on('open', () => this.send({ t: 'hello', v: this.version() }));
+    conn.on('data', m => { if (typeof m === 'string') { try { m = JSON.parse(m); } catch (e) { return; } } this.onData(m); });
+    conn.on('close', () => { if (this.conn === conn) this.lost(); });
+    conn.on('error', () => { if (this.conn === conn && this.phase === 'joining') this.fail(this.libErrorText({ type: 'webrtc' })); });
+  },
+
   host() {
     this.reset();
     this.role = 'host';
     this.phase = 'hosting';
     this.code = Array.from({ length: 5 }, () => NET_ALPHABET[Math.floor(SYS_RANDOM() * NET_ALPHABET.length)]).join('');
     this.status('Connexion au serveur de mise en relation…');
+    if (this.useLib()) {
+      const peer = this.peer = this.newPeer(NET_PREFIX + this.code);
+      peer.on('open', () => {
+        if (this.peer !== peer || this.phase !== 'hosting') return;
+        this.status(`CODE DE LA PARTIE<b class="code">${this.code}</b>Donnez ce code à votre ami (ou envoyez-lui le lien).<br>En attente de son arrivée…`);
+        $('#btn-net-copy').classList.remove('hidden');
+      });
+      peer.on('connection', conn => {
+        if (this.conn) {                              // partie déjà complète
+          conn.on('open', () => { conn.send({ t: 'bye', why: 'full' }); setTimeout(() => conn.close(), 500); });
+          return;
+        }
+        this.status('Un joueur arrive…');
+        this.bindConn(conn);
+      });
+      peer.on('error', err => {
+        if (this.peer !== peer) return;
+        if (err.type === 'unavailable-id') { this.host(); return; }
+        if (this.phase === 'hosting') this.fail(this.libErrorText(err));
+      });
+      return;
+    }
     this.sig = new Signal(NET_PREFIX + this.code, {
       open: () => {
         this.status(`CODE DE LA PARTIE<b class="code">${this.code}</b>Donnez ce code à votre ami (ou envoyez-lui le lien).<br>En attente de son arrivée…`);
@@ -171,6 +225,21 @@ const Net = {
     this.status(`Recherche de la partie <b>${code}</b>…`);
     const myId = NET_PREFIX + 'g' + Math.floor(SYS_RANDOM() * 1e12).toString(36);
     this.hostId = NET_PREFIX + code;
+    this.joinTimer = setTimeout(() => { if (this.phase === 'joining') this.fail("Impossible d'établir la connexion directe avec votre ami (réseau trop restrictif ?)."); }, 25000);
+    if (this.useLib()) {
+      const peer = this.peer = this.newPeer(myId);
+      peer.on('open', () => {
+        if (this.peer !== peer || this.phase !== 'joining' || this.conn) return;
+        this.status(`Connexion à la partie <b>${code}</b>…`);
+        this.bindConn(peer.connect(this.hostId, { reliable: true, serialization: 'json' }));
+      });
+      peer.on('error', err => {
+        if (this.peer !== peer) return;
+        if (err.type === 'unavailable-id') { this.join(code); return; }
+        if (this.phase === 'joining') this.fail(this.libErrorText(err));
+      });
+      return;
+    }
     this.sig = new Signal(myId, {
       open: () => this.makePeer(true),
       error: kind => this.fail(kind === 'unavailable' ? `Aucune partie trouvée avec le code ${code}.`
@@ -178,7 +247,6 @@ const Net = {
       message: m => this.onSignal(m),
       close: () => { if (this.phase === 'joining') this.fail('Connexion au serveur perdue.'); },
     });
-    this.joinTimer = setTimeout(() => { if (this.phase === 'joining') this.fail("Impossible d'établir la connexion directe avec votre ami (réseau trop restrictif ?)."); }, 20000);
   },
 
   /* ---------- WebRTC ---------- */
@@ -229,12 +297,13 @@ const Net = {
 
   bindChannel(ch) {
     this.ch = ch;
+    this.link = { send: m => { if (ch.readyState === 'open') ch.send(JSON.stringify(m)); }, close: () => { try { ch.close(); } catch (e) { /* */ } } };
     ch.onopen = () => this.send({ t: 'hello', v: this.version() });
     ch.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } this.onData(m); };
     ch.onclose = () => this.lost();
   },
 
-  send(m) { if (this.ch && this.ch.readyState === 'open') this.ch.send(JSON.stringify(m)); },
+  send(m) { if (this.link) this.link.send(m); },
 
   onData(m) {
     switch (m.t) {
@@ -245,6 +314,7 @@ const Net = {
         this.send({ t: 'ping', ts: performance.now() });
         this.pingTimer = setInterval(() => this.send({ t: 'ping', ts: performance.now() }), 1000);
         if (this.sig) { this.sig.close(); this.sig = null; }   // la suite se passe en direct
+        if (this.peer && !this.peer.destroyed) { try { this.peer.disconnect(); } catch (e) { /* */ } }
         this.openLobby();
         break;
       case 'ping': this.send({ t: 'pong', ts: m.ts }); break;
@@ -262,7 +332,8 @@ const Net = {
       case 'h': if (m.m === this.matchId) this.checkHash(m.f, m.h, true); break;
       case 'again': this.them.again = true; this.maybeRematch(); this.refreshResultInfo(); break;
       case 'lobby': this.openLobby(); break;
-      case 'bye': this.lost(m.why === 'version' ? "Vos deux versions du jeu sont différentes. Rechargez la page des deux côtés." : 'Votre adversaire a quitté la partie.'); break;
+      case 'bye': if (m.why === 'full') { this.fail('Cette partie est déjà complète.'); break; }
+        this.lost(m.why === 'version' ? "Vos deux versions du jeu sont différentes. Rechargez la page des deux côtés." : 'Votre adversaire a quitté la partie.'); break;
     }
   },
 
@@ -594,6 +665,13 @@ const Net = {
     clearInterval(this.pingTimer);
     if (this.sig) { this.sig.close(); this.sig = null; }
     if (this.ch) { this.ch.onclose = null; try { this.ch.close(); } catch (e) { /* */ } this.ch = null; }
+    const conn = this.conn, peer = this.peer;
+    this.conn = null; this.peer = null; this.link = null;
+    // fermeture différée : laisse partir un éventuel dernier message (« bye »)
+    setTimeout(() => {
+      if (conn) { try { conn.close(); } catch (e) { /* */ } }
+      if (peer) { try { peer.destroy(); } catch (e) { /* */ } }
+    }, 300);
     if (this.pc) { this.pc.onconnectionstatechange = null; try { this.pc.close(); } catch (e) { /* */ } this.pc = null; }
     this.me = null; this.them = null; this.stage = null;
     this.remote = new Map(); this.remoteHashes = new Map(); this.hashes = new Map();

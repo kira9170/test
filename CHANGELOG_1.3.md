@@ -24,6 +24,12 @@ En ligne, chacun joue avec **ZQSD/WASD + F G H** ou **les flèches + K L M**, au
   - Versions du jeu différentes : refus avec un message.
   - Code introuvable, partie déjà complète, adversaire parti ou connexion perdue (plus de 12 s sans données) : message clair et retour au menu en ligne.
 
+## Correctif 1.3.1
+- Erreur « Connexion au serveur perdue » au moment de rejoindre : la mise en relation passe maintenant par la **bibliothèque officielle PeerJS**
+  (chargée depuis unpkg.com), qui parle exactement le protocole du serveur public. Le client intégré ne sert plus que de secours
+  (hors ligne ou avec `?peer=`).
+- Messages d'erreur plus précis (code introuvable, réseau, navigateur incompatible), nouvelle version réseau (les anciennes pages en cache sont refusées proprement).
+
 ## Fichiers
 | Fichier | Nature |
 |---|---|
