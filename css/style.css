@@ -1,11 +1,12 @@
 /* [1.2] MODIFIÉ — détail des changements dans CHANGELOG_1.2.md */
 /* [1.3] MODIFIÉ — styles du mode en ligne en fin de fichier (voir CHANGELOG_1.3.md) */
+/* [1.4] MODIFIÉ — téléphone : commandes tactiles et menus agrandis en fin de fichier (voir CHANGELOG_1.4.md) */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; background: #0b0714; color: #fff; overflow: hidden;
   font-family: 'Press Start 2P', monospace; }
 body { display: flex; align-items: center; justify-content: center; }
 
-#app { position: relative; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9;
+#app { position: relative; width: min(100vw, calc(100vh * 16 / 9)); width: min(100vw, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9;
   background: #000; container-type: inline-size; }
 #game { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
 
@@ -139,3 +140,52 @@ button.small { min-width: 0; padding: .4cqw .8cqw; font-size: 1cqw; }
 .lobby-pick .ready.on { color: #7dff9a; }
 .screen.overlay { background: rgba(10, 6, 20, .45); }
 #lobby-info { margin: .6cqw 0; }
+
+/* [1.4] téléphone / tablette */
+.touch-hint, #rotate, #touch { display: none; }
+body.touch { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent; }
+body.touch .controls, body.touch .hint { display: none; }
+body.touch .touch-hint { display: block; font-size: 1.15cqw; line-height: 1.9; color: #c9b8ff; background: rgba(0,0,0,.55);
+  border: .25cqw solid #3d2a63; padding: 1cqw 1.6cqw; max-width: 80cqw; }
+body.touch button { font-size: 1.75cqw; padding: 1.1cqw 2.2cqw; }
+body.touch button:hover { transform: none; }
+body.touch .menu-buttons.grid2 button { min-width: 28cqw; }
+body.touch .portrait { width: 6.4cqw; height: 8.4cqw; }
+body.touch .pick-nav button { font-size: 1.4cqw; padding: .6cqw 1.2cqw; }
+body.touch p.sub { font-size: 1.35cqw; }
+body.touch #net-code { font-size: 2.6cqw; width: 22cqw; }
+
+#touch.show { display: block; position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+#touch .t-pad, #touch .t-btn, #touch .t-pause { pointer-events: auto; touch-action: none; }
+.t-pad { position: absolute; left: 2.2cqw; bottom: 2.6cqw; width: 20cqw; height: 20cqw; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.10) 0 40%, rgba(255,255,255,.04) 41% 100%);
+  border: .35cqw solid rgba(255,255,255,.28); }
+.t-ring { position: absolute; inset: 22%; border-radius: 50%; border: .25cqw dashed rgba(255,255,255,.18); }
+.t-knob { position: absolute; left: 50%; top: 50%; width: 8.5cqw; height: 8.5cqw; border-radius: 50%;
+  transform: translate(-50%, -50%); background: rgba(255, 210, 63, .55); border: .35cqw solid rgba(0,0,0,.6);
+  box-shadow: inset -.4cqw -.4cqw 0 rgba(0,0,0,.25); }
+.t-pad.on .t-knob { background: rgba(255, 210, 63, .85); }
+.t-btns { position: absolute; right: 2cqw; bottom: 2.4cqw; display: grid; gap: 1.1cqw;
+  grid-template-columns: repeat(3, 9.6cqw); grid-template-areas: ". thr sup" "grd kck pch"; }
+.t-btn { width: 9.6cqw; height: 9.6cqw; min-width: 0; padding: 0; border-radius: 50%; font-size: 1.15cqw !important;
+  color: #fff; border: .35cqw solid rgba(0,0,0,.7); opacity: .72; box-shadow: inset -.45cqw -.45cqw 0 rgba(0,0,0,.3); }
+.t-btn.on { opacity: 1; transform: scale(.92); }
+.t-punch { grid-area: pch; background: #e63946; }
+.t-kick { grid-area: kck; background: #4361ee; }
+.t-guard { grid-area: grd; background: #2a9d8f; }
+.t-throw { grid-area: thr; background: #7b2cbf; width: 8cqw; height: 8cqw; justify-self: center; align-self: end; }
+.t-super { grid-area: sup; background: #3d2a63; width: 8cqw; height: 8cqw; justify-self: center; align-self: end; color: #9a8cc0; }
+.t-super.ready { background: #ffd23f; color: #1a1033; opacity: .95; animation: tpulse .6s infinite alternate; }
+@keyframes tpulse { to { box-shadow: 0 0 2cqw #ffd23f, inset -.45cqw -.45cqw 0 rgba(0,0,0,.3); } }
+.t-pause { position: absolute; left: 50%; bottom: 1.2cqw; transform: translateX(-50%); min-width: 0;
+  width: 6cqw; height: 4.4cqw; padding: 0; font-size: 1.4cqw !important; background: rgba(0,0,0,.55); color: #fff;
+  border: .25cqw solid rgba(255,255,255,.35); box-shadow: none; }
+
+@media (orientation: portrait) {
+  body.touch #rotate { display: flex; position: fixed; inset: 0; z-index: 50; background: #0b0714; color: #ffd23f;
+    flex-direction: column; align-items: center; justify-content: center; gap: 6vw; text-align: center;
+    font-size: 4.2vw; line-height: 1.8; }
+  #rotate .phone { width: 18vw; height: 32vw; border: 1.4vw solid #ffd23f; border-radius: 3vw; animation: trot 1.6s ease-in-out infinite; }
+  @keyframes trot { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+}

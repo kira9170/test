@@ -155,7 +155,7 @@ const Net = {
   bindConn(conn) {
     this.conn = conn;
     this.link = { send: m => { if (conn.open) conn.send(m); }, close: () => { try { conn.close(); } catch (e) { /* */ } } };
-    conn.on('open', () => this.send({ t: 'hello', v: this.version() }));
+    conn.on('open', () => this.sayHello());
     conn.on('data', m => { if (typeof m === 'string') { try { m = JSON.parse(m); } catch (e) { return; } } this.onData(m); });
     conn.on('close', () => { if (this.conn === conn) this.lost(); });
     conn.on('error', () => { if (this.conn === conn && this.phase === 'joining') this.fail(this.libErrorText({ type: 'webrtc' })); });
@@ -298,16 +298,22 @@ const Net = {
   bindChannel(ch) {
     this.ch = ch;
     this.link = { send: m => { if (ch.readyState === 'open') ch.send(JSON.stringify(m)); }, close: () => { try { ch.close(); } catch (e) { /* */ } } };
-    ch.onopen = () => this.send({ t: 'hello', v: this.version() });
+    ch.onopen = () => this.sayHello();
     ch.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } this.onData(m); };
     ch.onclose = () => this.lost();
   },
 
   send(m) { if (this.link) this.link.send(m); },
 
+  sayHello() { if (!this.helloSent) { this.helloSent = true; this.send({ t: 'hello', v: this.version() }); } },
+
   onData(m) {
+    // messages arrivés avant l'entrée dans le salon : mis de côté puis rejoués
+    if (m.t !== 'hello' && (this.phase === 'hosting' || this.phase === 'joining')) { (this.early = this.early || []).push(m); return; }
     switch (m.t) {
       case 'hello':
+        if (this.phase !== 'hosting' && this.phase !== 'joining') break;   // déjà connectés
+        this.sayHello();
         if (m.v !== this.version()) { this.send({ t: 'bye', why: 'version' }); this.fail("Vos deux versions du jeu sont différentes. Rechargez la page (Ctrl+F5) des deux côtés."); return; }
         clearTimeout(this.joinTimer);
         this.rtt = 0; this.rtts = [];
@@ -316,6 +322,7 @@ const Net = {
         if (this.sig) { this.sig.close(); this.sig = null; }   // la suite se passe en direct
         if (this.peer && !this.peer.destroyed) { try { this.peer.disconnect(); } catch (e) { /* */ } }
         this.openLobby();
+        for (const e of (this.early || []).splice(0)) this.onData(e);
         break;
       case 'ping': this.send({ t: 'pong', ts: m.ts }); break;
       case 'pong': {
@@ -676,6 +683,7 @@ const Net = {
     this.me = null; this.them = null; this.stage = null;
     this.remote = new Map(); this.remoteHashes = new Map(); this.hashes = new Map();
     this.guestId = null; this.hostId = null;
+    this.helloSent = false; this.early = [];
     const copy = $('#btn-net-copy');
     if (copy) copy.classList.add('hidden');
   },

@@ -24,11 +24,18 @@ js/core/                   le moteur (rarement à modifier)
   game.js                  rounds, collisions, HUD, écran VS, cinématique de super
   ui.js                    menus, sélection perso/arène, options, pause
   net.js                   mode en ligne (WebRTC, salon, synchronisation)
+  touch.js                 commandes tactiles (téléphone, tablette)
   main.js                  démarrage et boucle 60 Hz
 js/characters/             UN FICHIER PAR PERSONNAGE
   _modele.js               modèle commenté à copier
 js/stages/                 UN FICHIER PAR ARÈNE
 ```
+
+## Sur téléphone (1.4)
+
+Ouvrez le lien du jeu sur le téléphone et tenez-le **en paysage**. Une croix (à gauche) et des boutons
+POING / PIED / GARDE / P+K / SUPER (à droite) apparaissent pendant les combats. Astuce : « Ajouter à l'écran
+d'accueil » pour jouer en plein écran comme une application. Détails : **`CHANGELOG_1.4.md`**.
 
 ## Jouer en ligne (1.3)
 

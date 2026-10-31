@@ -1,10 +1,19 @@
 <!DOCTYPE html>
 <!-- [1.2] MODIFIÉ — détail des changements dans CHANGELOG_1.2.md -->
 <!-- [1.3] MODIFIÉ — mode en ligne (voir CHANGELOG_1.3.md) -->
+<!-- [1.4] MODIFIÉ — jouable sur téléphone (voir CHANGELOG_1.4.md) -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0714">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pixel Brawl">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Pixel Brawl</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,6 +21,7 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div id="rotate"><div class="phone"></div><p>Tournez votre téléphone<br>en mode paysage</p></div>
 <div id="app">
   <canvas id="game" width="384" height="216"></canvas>
 
@@ -45,6 +55,7 @@
       <div class="wide"><b>TECHNIQUES</b> &nbsp; Garde + Bas : garde basse • Poing + Pied (près) : projection (et se libérer) •
         Double appui → ou ← : dash • Poing qui touche → spécial : annulation • ↓ → ↓ → + Poing (jauge pleine) : SUPER</div>
     </div>
+    <div class="touch-hint">TÉLÉPHONE : croix à gauche pour bouger, boutons à droite pour frapper.<br>SUPER = ↓ → ↓ → + Poing en un seul bouton (jauge pleine). II = pause.</div>
     <div class="hint">ÉCHAP / P : pause &nbsp;•&nbsp; F2 : hitboxes &nbsp;•&nbsp; → = vers l'adversaire</div>
   </div>
 
@@ -256,6 +267,7 @@
 <!-- Mise en relation en ligne : bibliothèque officielle PeerJS (si absente/hors ligne, net.js a un client intégré) -->
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="js/core/net.js"></script>
+<script src="js/core/touch.js"></script>
 <script src="js/core/main.js"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 'use strict';
 // [1.2] MODIFIÉ — détail des changements dans CHANGELOG_1.2.md
 // [1.3] MODIFIÉ — mode en ligne (voir CHANGELOG_1.3.md)
+// [1.4] MODIFIÉ — commandes tactiles (voir CHANGELOG_1.4.md)
 /* =====================================================================
  *  DÉMARRAGE & BOUCLE PRINCIPALE (pas de temps fixe à 60 Hz)
  * ===================================================================== */
@@ -10,6 +11,7 @@ CONFIG.DEBUG = !!Settings.data.hitboxes;
 const game = new Game($('#game'));
 Menu.init(game);
 Net.initUI();
+TouchPad.init(game);
 MenuNav.focusFirst();
 Music.play(MENU_THEME);   // démarre au premier clic ou à la première touche (règle des navigateurs)
 
@@ -87,6 +89,7 @@ function loop(now) {
   }
   game.render();
   Net.drawOverlay(game.ctx);
+  TouchPad.update();
   Menu.renderPreviews(game.globalTime);
   requestAnimationFrame(loop);
 }
